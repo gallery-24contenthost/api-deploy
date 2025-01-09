@@ -5,7 +5,7 @@ services:
         restart: unless-stopped
         volumes:
             - app_data:/var/www
-            - ./.deploy/nginx/conf.d:/etc/nginx/conf.d
+            - ./.docker/nginx/conf.d:/etc/nginx/conf.d
         ports:
             - "8000:8000"
         depends_on:
