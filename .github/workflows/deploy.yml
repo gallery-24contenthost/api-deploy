@@ -45,7 +45,7 @@ jobs:
           
             echo "Starting containers..."
             docker-compose up -d
-            sleep 10
+            sleep 20
           
             echo "Running migrations and clearing caches..."
             docker-compose exec app php artisan migrate --force
