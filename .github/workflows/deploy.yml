@@ -20,17 +20,17 @@ jobs:
           chmod 600 ~/.ssh/id_rsa
           ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
 
-      - name: Create deployment directory on the remote server
+      - name: Create deployment directory in the home directory on the remote server
         run: |
-          ssh -i ~/.ssh/id_rsa ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "mkdir -p /api-gallery-deploy"
+          ssh -i ~/.ssh/id_rsa ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "mkdir -p ~/api-gallery-deploy"
 
-      - name: Copy Docker Compose config to remote server
+      - name: Copy Docker Compose config to the home directory on the remote server
         run: |
-          scp -i ~/.ssh/id_rsa docker-compose.yml ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/api-gallery-deploy/docker-compose.yml
+          scp -i ~/.ssh/id_rsa docker-compose.yml ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:~/api-gallery-deploy/docker-compose.yml
 
       - name: Deploy application using Docker Compose
         run: |
           ssh -i ~/.ssh/id_rsa ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'EOF'
-            cd /api-gallery-deploy
+            cd ~/api-gallery-deploy
             docker-compose up -d
           EOF
