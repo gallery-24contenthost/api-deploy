@@ -28,9 +28,15 @@ jobs:
         run: |
           scp -i ~/.ssh/id_rsa docker-compose.yml ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:~/api-gallery-deploy/docker-compose.yml
 
+      - name: Decode and copy production environment variables
+        run: |
+          echo "${{ secrets.ENV_PRODUCTION }}" | base64 -d > .env
+          scp -i ~/.ssh/id_rsa .env ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:~/api-gallery-deploy/.env
+
       - name: Deploy application using Docker Compose
         run: |
           ssh -i ~/.ssh/id_rsa ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'EOF'
+            export COMPOSE_PROJECT_NAME=gallery_api
             cd ~/api-gallery-deploy
             docker-compose up -d
           EOF
