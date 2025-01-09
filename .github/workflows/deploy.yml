@@ -30,7 +30,7 @@ jobs:
 
       - name: Decode and copy production environment variables
         run: |
-          echo "${{ secrets.ENV_PRODUCTION }}" | base64 -d > .env
+          echo "${{ secrets.ENV_PRODUCTION }}" > .env
           scp -i ~/.ssh/id_rsa .env ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:~/api-gallery-deploy/.env
 
       - name: Deploy application using Docker Compose
