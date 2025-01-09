@@ -38,5 +38,21 @@ jobs:
           ssh -i ~/.ssh/id_rsa ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'EOF'
             export COMPOSE_PROJECT_NAME=gallery_api
             cd ~/api-gallery-deploy
+          
+            echo "Stopping and removing old containers..."
+            docker-compose down --volumes --remove-orphans
+            sleep 2
+          
+            echo "Starting containers..."
             docker-compose up -d
+            sleep 10
+          
+            echo "Running migrations and clearing caches..."
+            docker-compose exec app php artisan migrate --force
+            docker-compose exec app php artisan cache:clear
+            docker-compose exec app php artisan config:clear
+            docker-compose exec app php artisan route:clear
+          
+            echo "Deployment completed successfully!"
           EOF
+
