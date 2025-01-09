@@ -28,6 +28,11 @@ jobs:
         run: |
           scp -i ~/.ssh/id_rsa docker-compose.yml ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:~/api-gallery-deploy/docker-compose.yml
 
+      - name: Copy Nginx conf
+        run: |
+          scp -i ~/.ssh/id_rsa nginx.conf ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:~/api-gallery-deploy/nginx.conf
+      
+
       - name: Decode and copy production environment variables
         run: |
           echo "${{ secrets.ENV_PRODUCTION }}" > .env
