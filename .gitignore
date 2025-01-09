@@ -1,4 +1,4 @@
-.env.production
+.env
 .env
 .DS_Store
 .idea

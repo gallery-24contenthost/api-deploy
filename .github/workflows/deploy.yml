@@ -10,57 +10,22 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1. Checkout репозитория
-      - name: Checkout repository
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
-      # 2. Настройка SSH
-      - name: Set up SSH
-        uses: webfactory/ssh-agent@v0.5.3
-        with:
-          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
-
-      # 3. Добавление known_hosts для VPS
-      - name: Add known hosts
+      - name: Install SSH keys
         run: |
-          echo "${{ secrets.SSH_KNOWN_HOSTS }}" > ~/.ssh/known_hosts
+          install -m 600 -D /dev/null ~/.ssh/id_rsa
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          ssh-keyscan -H ${{ secrets.SSH_HOST }} > ~/.ssh/known_hosts
 
-      # 4. Декодирование .env файла из base64
-      - name: Decode and create .env file
+      - name: Copy Docker Compose config to remote server
         run: |
-          echo "${{ secrets.ENV_PRODUCTION }}" | base64 --decode > .env
+          scp -i ~/.ssh/id_rsa docker-compose.yml ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/api-gallery-deploy/docker-compose.yml
 
-      # 5. Деплой на VPS с установкой переменной окружения COMPOSE_PROJECT_NAME
-      - name: Deploy to VPS
+      - name: Run Docker Compose commands in the deployed directory
         run: |
-          ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'EOF'
-            cd ~/gallery-api-deploy
-
-            # Устанавливаем переменную окружения COMPOSE_PROJECT_NAME
-            export COMPOSE_PROJECT_NAME=gallery_api
-
-            # Тянем последние образы
-            docker pull alonecat/24contenthost-gallery-api:latest
-
-            # Останавливаем старые контейнеры и удаляем орфанные volumes
-            docker-compose down --volumes --remove-orphans
-
-            # Поднимаем новые контейнеры с основного docker-compose.yml
+          ssh -i ~/.ssh/id_rsa ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'EOF'
+            cd /api-gallery-deploy
+            ls -la
             docker-compose up -d
-
-            echo "Waiting for MySQL to be ready..."
-            until docker-compose exec db mysqladmin ping -h localhost -u root -p"${{ secrets.DB_PASSWORD }}" --silent; do
-              echo "Waiting for MySQL..."
-              sleep 2
-            done
-
-            echo "MySQL is ready!"
-            sleep 10
-
-            # Миграции и очистка кеша
-            docker-compose exec app php artisan migrate --force
-            docker-compose exec app php artisan cache:clear
-            docker-compose exec app php artisan config:clear
-            docker-compose exec app php artisan route:clear
-
           EOF
