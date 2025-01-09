@@ -1,4 +1,4 @@
-name: api
+name: gallery_api
 services:
     nginx-api:
         image: nginx:latest
