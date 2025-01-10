@@ -1,8 +1,13 @@
 name: Deploy API
 
+#on:
+ # repository_dispatch:
+  #  types: [docker-push]
+
 on:
-  repository_dispatch:
-    types: [docker-push]
+  push:
+    branches:
+      - main
 
 jobs:
   deploy:
