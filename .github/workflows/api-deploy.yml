@@ -72,15 +72,6 @@ jobs:
             sleep 5
           
           
-            #echo "Waiting for MySQL to be ready..."
-            #until docker-compose exec db mysqladmin ping -h localhost -u root -p"${DB_PASSWORD}" --silent; do
-             # echo "Waiting for MySQL..."
-             # sleep 2
-            #done
-  
-            #echo "MySQL is ready!"
-            #sleep 5
-          
             echo "Running migrations and clearing caches..."
             docker-compose exec app php artisan migrate --force
             docker-compose exec app php artisan cache:clear
