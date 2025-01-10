@@ -79,7 +79,7 @@ jobs:
             #done
   
             #echo "MySQL is ready!"
-            sleep 10
+            sleep 15
           
             echo "Running migrations and clearing caches..."
             docker-compose exec app php artisan migrate --force
