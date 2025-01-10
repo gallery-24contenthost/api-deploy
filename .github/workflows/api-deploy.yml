@@ -53,10 +53,10 @@ jobs:
 
       - name: Deploy application using Docker Compose
         run: |
-         
+          export DB_PASSWORD="${{ secrets.DB_PASSWORD }}"
           ssh -i ~/.ssh/id_rsa ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'EOF'
             export COMPOSE_PROJECT_NAME=gallery_api
-            export DB_PASSWORD="${{ secrets.DB_PASSWORD }}"
+    
           
             cd ~/api-gallery-deploy
           
