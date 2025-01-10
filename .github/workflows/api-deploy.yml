@@ -53,10 +53,8 @@ jobs:
 
       - name: Deploy application using Docker Compose
         run: |
-          export DB_PASSWORD="${{ secrets.DB_PASSWORD }}"
           ssh -i ~/.ssh/id_rsa ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'EOF'
-            export COMPOSE_PROJECT_NAME=gallery_api
-    
+            export COMPOSE_PROJECT_NAME=gallery_api 
           
             cd ~/api-gallery-deploy
           
@@ -67,14 +65,21 @@ jobs:
             echo "Starting containers..."
             docker-compose up -d
           
-            echo "Waiting for MySQL to be ready..."
-            until docker-compose exec db mysqladmin ping -h localhost -u root -p"${DB_PASSWORD}" --silent; do
-              echo "Waiting for MySQL..."
-              sleep 2
-            done
-  
-            echo "MySQL is ready!"
             sleep 5
+          
+            docker-compose exec db bash -c 'echo $DB_PASSWORD'
+            
+            sleep 5
+          
+          
+            #echo "Waiting for MySQL to be ready..."
+            #until docker-compose exec db mysqladmin ping -h localhost -u root -p"${DB_PASSWORD}" --silent; do
+             # echo "Waiting for MySQL..."
+             # sleep 2
+            #done
+  
+            #echo "MySQL is ready!"
+            #sleep 5
           
             echo "Running migrations and clearing caches..."
             docker-compose exec app php artisan migrate --force
