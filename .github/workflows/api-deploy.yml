@@ -25,22 +25,33 @@ jobs:
 
       - name: Copy Docker Compose config to the home directory on the remote server
         run: |
-          scp -i ~/.ssh/id_rsa docker-compose.yml ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:~/api-gallery-deploy/docker-compose.yml
+          scp -i ~/.ssh/id_rsa ./api/docker-compose.yml ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:~/api-gallery-deploy/docker-compose.yml
 
       - name: Copy Nginx conf
         run: |
-          scp -i ~/.ssh/id_rsa nginx.conf ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:~/api-gallery-deploy/nginx.conf
+          scp -i ~/.ssh/id_rsa ./api/nginx.conf ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:~/api-gallery-deploy/nginx.conf
       
 
-      - name: Decode and copy production environment variables
+      - name: Copy environment variables
         run: |
-          echo "${{ secrets.ENV_PRODUCTION }}" > .env
+          echo "APP_KEY=${{ secrets.APP_KEY }}" >> .env
+          echo "APP_URL=${{ secrets.APP_URL }}" >> .env
+          echo "DB_CONNECTION=${{ secrets.DB_CONNECTION }}" >> .env
+          echo "DB_HOST=${{ secrets.DB_HOST }}" >> .env
+          echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" >> .env
+          echo "DB_PORT=${{ secrets.DB_PORT }}" >> .env
+          echo "DB_USERNAME=${{ secrets.DB_USERNAME }}" >> .env
+          echo "FRONTEND_URL=${{ secrets.FRONTEND_URL }}" >> .env
+          echo "SANCTUM_STATEFUL_DOMAINS=${{ secrets.SANCTUM_STATEFUL_DOMAINS }}" >> .env
+          echo "SESSION_DOMAIN=${{ secrets.SESSION_DOMAIN }}" >> .env
+          echo "APP_DEBUG=false" >> .env 
           scp -i ~/.ssh/id_rsa .env ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:~/api-gallery-deploy/.env
 
       - name: Deploy application using Docker Compose
         run: |
           ssh -i ~/.ssh/id_rsa ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'EOF'
             export COMPOSE_PROJECT_NAME=gallery_api
+          
             cd ~/api-gallery-deploy
           
             echo "Stopping and removing old containers..."
@@ -49,7 +60,15 @@ jobs:
           
             echo "Starting containers..."
             docker-compose up -d
-            sleep 20
+          
+            echo "Waiting for MySQL to be ready..."
+            until docker-compose exec db mysqladmin ping -h localhost -u root -p"${DB_PASSWORD}" --silent; do
+              echo "Waiting for MySQL..."
+              sleep 2
+            done
+  
+            echo "MySQL is ready!"
+            sleep 5
           
             echo "Running migrations and clearing caches..."
             docker-compose exec app php artisan migrate --force
