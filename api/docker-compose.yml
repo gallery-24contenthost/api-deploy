@@ -1,11 +1,10 @@
 name: gallery_api
 services:
     nginx-api:
-        image: nginx:latest
+        image: alonecat/24contenthost-gallery-api-nginx
         restart: unless-stopped
         volumes:
             - app_data:/var/www
-            - ./nginx.conf:/etc/nginx/conf.d/nginx.conf
         ports:
             - "8000:8000"
         depends_on:

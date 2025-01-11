@@ -1,14 +1,12 @@
 name: Deploy API
 
 on:
+  # Trigger via repository dispatch (from external event)
   repository_dispatch:
     types: [docker-push]
 
-#on:
- # push:
-  #  branches:
-   #   - main
-
+  # Manual trigger via GitHub UI
+  workflow_dispatch:  # Allows manual triggering of the workflow
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -31,11 +29,6 @@ jobs:
       - name: Copy Docker Compose config to the home directory on the remote server
         run: |
           scp -i ~/.ssh/id_rsa ./api/docker-compose.yml ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:~/api-gallery-deploy/docker-compose.yml
-
-      - name: Copy Nginx conf
-        run: |
-          scp -i ~/.ssh/id_rsa ./api/nginx.conf ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:~/api-gallery-deploy/nginx.conf
-      
 
       - name: Copy environment variables
         run: |
