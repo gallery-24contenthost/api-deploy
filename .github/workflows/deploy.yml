@@ -24,11 +24,11 @@ jobs:
 
       - name: Create deployment directory in the home directory on the remote server
         run: |
-          ssh -i ~/.ssh/id_rsa ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "mkdir -p ~/api-gallery-deploy"
+          ssh -i ~/.ssh/id_rsa ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "mkdir -p ~/gallery-deploy"
 
       - name: Copy Docker Compose config to the home directory on the remote server
         run: |
-          scp -i ~/.ssh/id_rsa ./api/docker-compose.yml ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:~/api-gallery-deploy/docker-compose.yml
+          scp -i ~/.ssh/id_rsa ./docker-compose.yml ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:~/gallery-deploy/docker-compose.yml
 
       - name: Copy environment variables
         run: |
@@ -59,7 +59,7 @@ jobs:
           ssh -i ~/.ssh/id_rsa ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'EOF'
             export COMPOSE_PROJECT_NAME=gallery_api 
            
-            cd ~/api-gallery-deploy
+            cd ~/gallery-deploy
           
             echo "Stopping and removing old containers..."
             docker-compose down --volumes --remove-orphans
