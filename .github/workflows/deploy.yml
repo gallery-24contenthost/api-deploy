@@ -51,16 +51,18 @@ jobs:
 
       - name: Deploy application using Docker Stack
         run: |
-          export DB_PASSWORD=${{ secrets.DB_PASSWORD }}
           
           ssh -i ~/.ssh/id_rsa ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'EOF'
             export COMPOSE_PROJECT_NAME=gallery
           
-            cd ~/gallery-deploy
+          cd ~/gallery-deploy
 
-            echo "Stopping and removing old stack..."
-            docker stack ls | grep -q gallery && docker stack rm gallery || echo "No stack found to remove"
-            sleep 2
+          echo "Environment Variables:"
+          cat .env  # Check the variables in the remote environment
+        
+          echo "Stopping and removing old stack..."
+          docker stack ls | grep -q gallery && docker stack rm gallery || echo "No stack found to remove"
+          sleep 2
 
             echo "Deploying new stack..."
             docker stack deploy -c docker-compose.yml gallery
