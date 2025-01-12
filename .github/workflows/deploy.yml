@@ -28,44 +28,41 @@ jobs:
         run: |
           scp -i ~/.ssh/id_rsa ./docker-compose.yml ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:~/gallery-deploy/docker-compose.yml
 
-      - name: Copy environment variables
+      - name: Create environment variables on the remote server
         run: |
-          echo "APP_ENV=production" >> .env
-          echo "APP_DEBUG=false" >> .env
-          echo "APP_NAME=${{ secrets.APP_NAME }}" >> .env
-          echo "APP_KEY=${{ secrets.APP_KEY }}" >> .env
-          echo "APP_URL=${{ secrets.APP_URL }}" >> .env
-          echo "DB_CONNECTION=${{ secrets.DB_CONNECTION }}" >> .env
-          echo "DB_HOST=${{ secrets.DB_HOST }}" >> .env
-          echo "DB_DATABASE=${{ secrets.DB_DATABASE }}" >> .env
-          echo "DB_USERNAME=${{ secrets.DB_USERNAME }}" >> .env
-          echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" >> .env
-          echo "DB_PORT=${{ secrets.DB_PORT }}" >> .env
-          echo "FRONTEND_URL=${{ secrets.FRONTEND_URL }}" >> .env
-          echo "SANCTUM_STATEFUL_DOMAINS=${{ secrets.SANCTUM_STATEFUL_DOMAINS }}" >> .env
-          echo "SESSION_DOMAIN=${{ secrets.SESSION_DOMAIN }}" >> .env
-          echo "NODE_ENV=production" >> .env
-          echo "VITE_BASE_URL=${{ secrets.VITE_BASE_URL }}" >> .env
-          
-          scp -i ~/.ssh/id_rsa .env ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:~/gallery-deploy/.env
+          ssh -i ~/.ssh/id_rsa ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << EOF
+            echo "APP_ENV=production" > ~/gallery-deploy/.env
+            echo "APP_DEBUG=false" >> ~/gallery-deploy/.env
+            echo "APP_NAME=${{ secrets.APP_NAME }}" >> ~/gallery-deploy/.env
+            echo "APP_KEY=${{ secrets.APP_KEY }}" >> ~/gallery-deploy/.env
+            echo "APP_URL=${{ secrets.APP_URL }}" >> ~/gallery-deploy/.env
+            echo "DB_CONNECTION=${{ secrets.DB_CONNECTION }}" >> ~/gallery-deploy/.env
+            echo "DB_HOST=${{ secrets.DB_HOST }}" >> ~/gallery-deploy/.env
+            echo "DB_DATABASE=${{ secrets.DB_DATABASE }}" >> ~/gallery-deploy/.env
+            echo "DB_USERNAME=${{ secrets.DB_USERNAME }}" >> ~/gallery-deploy/.env
+            echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" >> ~/gallery-deploy/.env
+            echo "DB_PORT=${{ secrets.DB_PORT }}" >> ~/gallery-deploy/.env
+            echo "FRONTEND_URL=${{ secrets.FRONTEND_URL }}" >> ~/gallery-deploy/.env
+            echo "SANCTUM_STATEFUL_DOMAINS=${{ secrets.SANCTUM_STATEFUL_DOMAINS }}" >> ~/gallery-deploy/.env
+            echo "SESSION_DOMAIN=${{ secrets.SESSION_DOMAIN }}" >> ~/gallery-deploy/.env
+            echo "NODE_ENV=production" >> ~/gallery-deploy/.env
+            echo "VITE_BASE_URL=${{ secrets.VITE_BASE_URL }}" >> ~/gallery-deploy/.env
+          EOF
 
       - name: Deploy application using Docker Stack
         run: |
-          
           ssh -i ~/.ssh/id_rsa ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'EOF'
-            export COMPOSE_PROJECT_NAME=gallery
-          
-          cd ~/gallery-deploy
+            cd ~/gallery-deploy
 
-          echo "Environment Variables:"
-          cat .env  # Check the variables in the remote environment
-        
-          echo "Stopping and removing old stack..."
-          docker stack ls | grep -q gallery && docker stack rm gallery || echo "No stack found to remove"
-          sleep 2
+            echo "Environment Variables:"
+            cat .env  # Check the variables in the remote environment
+
+            echo "Stopping and removing old stack..."
+            docker stack ls | grep -q gallery && docker stack rm gallery || echo "No stack found to remove"
+            sleep 2
 
             echo "Deploying new stack..."
-            docker stack deploy  -c --env-file=.env -f docker-compose.yml gallery
-          
+            docker stack deploy -c docker-compose.yml --env-file .env gallery
+
             echo "Deployment completed successfully!"
           EOF
