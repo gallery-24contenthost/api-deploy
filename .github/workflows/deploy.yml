@@ -62,7 +62,8 @@ jobs:
             sleep 2
 
             echo "Deploying new stack..."
-            docker stack deploy -c docker-compose.yml --env-file .env gallery
+            export $(cat ~/gallery-deploy/.env | xargs)
+            docker stack deploy -c docker-compose.yml gallery
 
             echo "Deployment completed successfully!"
           EOF
