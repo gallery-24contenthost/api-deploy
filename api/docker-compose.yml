@@ -1,4 +1,4 @@
-name: gallery_api
+name: gallery
 services:
     nginx-api:
         image: alonecat/24contenthost-gallery-api-nginx
@@ -17,8 +17,6 @@ services:
             - "traefik.http.routers.api.entrypoints=websecure"
             - "traefik.http.routers.api.tls.certresolver=letsencrypt"
             - "traefik.http.services.api.loadbalancer.server.port=8000"
-            - "traefik.http.routers.api.middlewares=api-strip-prefix"
-            - "traefik.http.middlewares.api-strip-prefix.stripprefix.prefixes="
 
     app:
         image: alonecat/24contenthost-gallery-api
@@ -39,17 +37,14 @@ services:
             - APP_DEBUG=$APP_DEBUG
         volumes:
             - app_data:/var/www
-        #ports:
-        #    - "9000:9000"
         depends_on:
             - db
         networks:
             - content_host_network
+
     app-client:
         image: alonecat/24contenthost-gallery-client:latest
         restart: unless-stopped
-        networks:
-            - content_host_network
         ports:
             - "3000:3000"
         environment:
@@ -61,6 +56,8 @@ services:
             - "traefik.http.routers.client-app-client.entrypoints=websecure"
             - "traefik.http.routers.client-app-client.tls.certresolver=letsencrypt"
             - "traefik.http.services.client-app-client.loadbalancer.server.port=3000"
+        networks:
+            - content_host_network
 
     db:
         image: mysql:8.0

@@ -1,4 +1,4 @@
-name: Deploy API
+name: Deploy Gallery
 
 on:
   # Trigger via repository dispatch (from external event)
