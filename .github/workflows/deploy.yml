@@ -1,12 +1,10 @@
 name: Deploy Gallery
 
 on:
-  # Trigger via repository dispatch (from external event)
   repository_dispatch:
     types: [docker-push]
+  workflow_dispatch:
 
-  # Manual trigger via GitHub UI
-  workflow_dispatch:  # Allows manual triggering of the workflow
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -22,11 +20,11 @@ jobs:
           chmod 600 ~/.ssh/id_rsa
           ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
 
-      - name: Create deployment directory in the home directory on the remote server
+      - name: Create deployment directory on the remote server
         run: |
           ssh -i ~/.ssh/id_rsa ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "mkdir -p ~/gallery-deploy"
 
-      - name: Copy Docker Compose config to the home directory on the remote server
+      - name: Copy Docker Compose config
         run: |
           scp -i ~/.ssh/id_rsa ./docker-compose.yml ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:~/gallery-deploy/docker-compose.yml
 
@@ -46,7 +44,6 @@ jobs:
           echo "FRONTEND_URL=${{ secrets.FRONTEND_URL }}" >> .env
           echo "SANCTUM_STATEFUL_DOMAINS=${{ secrets.SANCTUM_STATEFUL_DOMAINS }}" >> .env
           echo "SESSION_DOMAIN=${{ secrets.SESSION_DOMAIN }}" >> .env
-          
           echo "NODE_ENV=production" >> .env
           echo "VITE_BASE_URL=${{ secrets.VITE_BASE_URL }}" >> .env
           
@@ -57,12 +54,12 @@ jobs:
           export DB_PASSWORD=${{ secrets.DB_PASSWORD }}
           
           ssh -i ~/.ssh/id_rsa ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'EOF'
-            export COMPOSE_PROJECT_NAME=gallery 
+            export COMPOSE_PROJECT_NAME=gallery
           
             cd ~/gallery-deploy
 
             echo "Stopping and removing old stack..."
-            docker stack rm gallery
+            docker stack ls | grep -q gallery && docker stack rm gallery || echo "No stack found to remove"
             sleep 2
 
             echo "Deploying new stack..."

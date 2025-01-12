@@ -1,5 +1,3 @@
-name: gallery
-
 services:
   nginx-api:
     image: alonecat/24contenthost-gallery-api-nginx
