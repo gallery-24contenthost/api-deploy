@@ -49,7 +49,7 @@ jobs:
             echo "VITE_BASE_URL=${{ secrets.VITE_BASE_URL }}" >> ~/gallery-deploy/.env
           EOF
 
-      - name: Deploy application using Docker Stack
+      - name: Deploy application using Docker Compose
         run: |
           ssh -i ~/.ssh/id_rsa ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'EOF'
             cd ~/gallery-deploy
@@ -57,13 +57,12 @@ jobs:
             echo "Environment Variables:"
             cat .env  # Check the variables in the remote environment
 
-            echo "Stopping and removing old stack..."
-            docker stack ls | grep -q gallery && docker stack rm gallery || echo "No stack found to remove"
+            echo "Stopping and removing old containers..."
+            docker-compose down || echo "No containers to remove"
             sleep 2
 
-            echo "Deploying new stack..."
-            export $(cat ~/gallery-deploy/.env | xargs)
-            docker stack deploy -c docker-compose.yml gallery
+            echo "Deploying new containers..."
+            docker-compose up -d
 
             echo "Deployment completed successfully!"
           EOF
