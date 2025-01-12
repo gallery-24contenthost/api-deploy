@@ -49,40 +49,24 @@ jobs:
           
           echo "NODE_ENV=production" >> .env
           echo "VITE_BASE_URL=${{ secrets.VITE_BASE_URL }}" >> .env
-       
+          
           scp -i ~/.ssh/id_rsa .env ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:~/gallery-deploy/.env
 
-      - name: Deploy application using Docker Compose
+      - name: Deploy application using Docker Stack
         run: |
           export DB_PASSWORD=${{ secrets.DB_PASSWORD }}
           
           ssh -i ~/.ssh/id_rsa ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'EOF'
-            export COMPOSE_PROJECT_NAME=gallery_api 
-           
+            export COMPOSE_PROJECT_NAME=gallery 
+          
             cd ~/gallery-deploy
-          
-            echo "Stopping and removing old containers..."
-            docker-compose down --volumes --remove-orphans
+
+            echo "Stopping and removing old stack..."
+            docker stack rm gallery
             sleep 2
-          
-            echo "Starting containers..."
-            docker-compose up -d
-           
-            #echo "Waiting for MySQL to be ready..."
-            #until docker-compose exec db mysqladmin ping -h localhost -u root -p12301230 --silent; do
-             # echo "Waiting for MySQL..."
-             # sleep 2
-            #done
-  
-            #echo "MySQL is ready!"
-            sleep 15
-          
-            echo "Running migrations and clearing caches..."
-            docker-compose exec app php artisan migrate --force
-            docker-compose exec app php artisan cache:clear
-            docker-compose exec app php artisan config:clear
-            docker-compose exec app php artisan route:clear
+
+            echo "Deploying new stack..."
+            docker stack deploy -c docker-compose.yml gallery
           
             echo "Deployment completed successfully!"
           EOF
-          
