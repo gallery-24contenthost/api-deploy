@@ -1,0 +1,57 @@
+name: Deploy API
+
+on:
+  # Trigger via repository dispatch (from external event)
+  repository_dispatch:
+    types: [docker-push]
+
+  # Manual trigger via GitHub UI
+  workflow_dispatch:  # Allows manual triggering of the workflow
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install SSH keys
+        run: |
+          install -m 600 -D /dev/null ~/.ssh/id_rsa
+          echo "${{ secrets.SSH_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Create deployment directory in the home directory on the remote server
+        run: |
+          ssh -i ~/.ssh/id_rsa ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "mkdir -p ~/client-gallery-deploy"
+
+      - name: Copy Docker Compose config to the home directory on the remote server
+        run: |
+          scp -i ~/.ssh/id_rsa ./client/docker-compose.yml ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:~/client-gallery-deploy/docker-compose.yml
+
+      - name: Copy environment variables
+        run: |
+          echo "APP_ENV=production" >> .env
+          echo "VITE_BASE_URL=${{ secrets.VITE_BASE_URL }}" >> .env
+           scp -i ~/.ssh/id_rsa .env ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:~/client-gallery-deploy/.env
+
+      - name: Deploy application using Docker Compose
+        run: |
+          export DB_PASSWORD=${{ secrets.DB_PASSWORD }}
+          
+          ssh -i ~/.ssh/id_rsa ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'EOF'
+            export COMPOSE_PROJECT_NAME=gallery_client 
+          
+            cd ~/client-gallery-deploy
+          
+            echo "Stopping and removing old containers..."
+            docker-compose down --volumes --remove-orphans
+            sleep 2
+          
+            echo "Starting containers..."
+            docker-compose up -d
+        
+            echo "Deployment completed successfully!"
+          EOF
+          
