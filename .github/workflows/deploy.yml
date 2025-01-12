@@ -50,7 +50,7 @@ jobs:
           echo "NODE_ENV=production" >> .env
           echo "VITE_BASE_URL=${{ secrets.VITE_BASE_URL }}" >> .env
        
-          scp -i ~/.ssh/id_rsa .env ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:~/api-gallery-deploy/.env
+          scp -i ~/.ssh/id_rsa .env ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:~/gallery-deploy/.env
 
       - name: Deploy application using Docker Compose
         run: |
