@@ -1,6 +1,9 @@
 name: Deploy Gallery
 
 on:
+  push:
+    branches:
+      - main
   repository_dispatch:
     types: [docker-push]
   workflow_dispatch:
