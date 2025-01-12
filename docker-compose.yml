@@ -43,10 +43,11 @@ services:
         sleep 10 && 
         php artisan migrate --force"
     environment:
-      - DB_HOST=db
-      - DB_PORT=3306
-      - DB_USERNAME=$DB_USERNAME
-      - DB_PASSWORD=$DB_PASSWORD
+      - DB_HOST= ${DB_HOST}
+      - DB_DATABASE = ${DB_DATABASE}
+      - DB_PORT= ${DB_PORT}
+      - DB_USERNAME=${DB_USERNAME}
+      - DB_PASSWORD=${DB_PASSWORD}
     depends_on:
       - db
     networks:
