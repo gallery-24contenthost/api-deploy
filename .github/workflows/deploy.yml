@@ -40,12 +40,14 @@ jobs:
           docker-compose down --volumes --remove-orphans || echo "No containers to remove"
           docker-compose up -d
 
-          echo "Waiting for database to be ready..."
-          until docker-compose exec -T db mysqladmin -u${DB_USERNAME} -p${DB_PASSWORD} -h${DB_HOST} --silent --wait=30; do
-            echo "Waiting for database..."
-            sleep 5
+          echo "Waiting for MySQL to be ready..."
+          until docker-compose exec db mysqladmin ping -h localhost -u root -p"${DB_PASSWORD}" --silent; do
+          echo "Waiting for MySQL..."
+          sleep 2
           done
-          echo "Database is ready."
+          
+          echo "MySQL is ready!"
+          sleep 5
 
           docker-compose exec app php artisan migrate --force
           echo "Deployment completed successfully!"
