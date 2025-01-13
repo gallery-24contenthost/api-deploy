@@ -1,5 +1,3 @@
-name: Deploy Gallery
-
 on:
   push:
     branches:
@@ -10,62 +8,44 @@ on:
 
 jobs:
   deploy:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, gallery]
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Install SSH keys
+      - name: Deploy and run migrations
+        env:
+          APP_ENV: production
+          APP_DEBUG: false
+          APP_NAME: "Gallery Api"
+          APP_KEY: ${{ secrets.APP_KEY }}
+          APP_URL: ${{ secrets.APP_URL }}
+          DB_CONNECTION: ${{ secrets.DB_CONNECTION }}
+          DB_HOST: ${{ secrets.DB_HOST }}
+          DB_PORT: ${{ secrets.DB_PORT }}
+          DB_DATABASE: ${{ secrets.DB_DATABASE }}
+          DB_USERNAME: ${{ secrets.DB_USERNAME }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          SANCTUM_STATEFUL_DOMAINS: ${{ secrets.SANCTUM_STATEFUL_DOMAINS }}
+          SESSION_DOMAIN: ${{ secrets.SESSION_DOMAIN }}
+          FRONTEND_URL: ${{ secrets.FRONTEND_URL }}
+          NODE_ENV: production
+          VITE_BASE_URL: ${{ secrets.VITE_BASE_URL }}
+          COMPOSE_PROJECT_NAME: gallery
         run: |
-          install -m 600 -D /dev/null ~/.ssh/id_rsa
-          echo "${{ secrets.SSH_KEY }}" > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
+          echo "COMPOSE_PROJECT_NAME=${COMPOSE_PROJECT_NAME}"
 
-      - name: Create deployment directory on the remote server
-        run: |
-          ssh -i ~/.ssh/id_rsa ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "mkdir -p ~/gallery-deploy"
+          docker-compose pull
+          docker-compose down --volumes --remove-orphans || echo "No containers to remove"
+          docker-compose up -d
 
-      - name: Copy Docker Compose config
-        run: |
-          scp -i ~/.ssh/id_rsa ./docker-compose.yml ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:~/gallery-deploy/docker-compose.yml
+          echo "Waiting for database to be ready..."
+          until docker-compose exec -T db mysqladmin -u${DB_USERNAME} -p${DB_PASSWORD} -h${DB_HOST} --silent --wait=30; do
+            echo "Waiting for database..."
+            sleep 5
+          done
+          echo "Database is ready."
 
-      - name: Create environment variables on the remote server
-        run: |
-          ssh -i ~/.ssh/id_rsa ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << EOF
-            echo "APP_ENV=production" > ~/gallery-deploy/.env
-            echo "APP_DEBUG=false" >> ~/gallery-deploy/.env
-            echo "APP_NAME=Gallery Api" >> ~/gallery-deploy/.env
-            echo "APP_KEY=${{ secrets.APP_KEY }}" >> ~/gallery-deploy/.env
-            echo "APP_URL=${{ secrets.APP_URL }}" >> ~/gallery-deploy/.env
-            echo "DB_CONNECTION=${{ secrets.DB_CONNECTION }}" >> ~/gallery-deploy/.env
-            echo "DB_HOST=${{ secrets.DB_HOST }}" >> ~/gallery-deploy/.env
-            echo "DB_DATABASE=${{ secrets.DB_DATABASE }}" >> ~/gallery-deploy/.env
-            echo "DB_USERNAME=${{ secrets.DB_USERNAME }}" >> ~/gallery-deploy/.env
-            echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" >> ~/gallery-deploy/.env
-            echo "DB_PORT=${{ secrets.DB_PORT }}" >> ~/gallery-deploy/.env
-            echo "FRONTEND_URL=${{ secrets.FRONTEND_URL }}" >> ~/gallery-deploy/.env
-            echo "SANCTUM_STATEFUL_DOMAINS=${{ secrets.SANCTUM_STATEFUL_DOMAINS }}" >> ~/gallery-deploy/.env
-            echo "SESSION_DOMAIN=${{ secrets.SESSION_DOMAIN }}" >> ~/gallery-deploy/.env
-            echo "NODE_ENV=production" >> ~/gallery-deploy/.env
-            echo "VITE_BASE_URL=${{ secrets.VITE_BASE_URL }}" >> ~/gallery-deploy/.env
-          EOF
-
-      - name: Deploy application using Docker Compose
-        run: |
-          ssh -i ~/.ssh/id_rsa ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'EOF'
-            cd ~/gallery-deploy
-
-            echo "Environment Variables:"
-            cat .env  # Check the variables in the remote environment
-
-            echo "Stopping and removing old containers..."
-            docker-compose down || echo "No containers to remove"
-            sleep 2
-
-            echo "Deploying new containers..."
-            docker-compose up -d
-
-            echo "Deployment completed successfully!"
-          EOF
+          docker-compose exec app php artisan migrate --force
+          echo "Deployment completed successfully!"

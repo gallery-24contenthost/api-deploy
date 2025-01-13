@@ -42,24 +42,6 @@ services:
         networks:
             - content_host_network
 
-    migrate:
-        image: alonecat/24contenthost-gallery-api:latest
-        command: >
-            sh -c "
-              echo 'Waiting for DB to be ready...'
-              sleep 10 && 
-              php artisan migrate --force"
-        environment:
-            - DB_HOST=${DB_HOST}
-            - DB_DATABASE=${DB_DATABASE}
-            - DB_PORT=${DB_PORT}
-            - DB_USERNAME=${DB_USERNAME}
-            - DB_PASSWORD=${DB_PASSWORD}
-        depends_on:
-            - db
-        networks:
-            - content_host_network
-
     db:
         image: mysql:8.0
         restart: always
