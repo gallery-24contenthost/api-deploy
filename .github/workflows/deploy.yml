@@ -47,7 +47,7 @@ jobs:
           done
           
           echo "MySQL is ready!"
-          sleep 5
+          sleep 10
 
           docker-compose exec app php artisan migrate --force
           echo "Deployment completed successfully!"
